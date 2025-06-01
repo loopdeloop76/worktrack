@@ -3,10 +3,14 @@ import { useProjectsAPI } from './hooks/useProjectsAPI';
 import { ProjectForm } from './components/ProjectForm';
 import { ProjectList } from './components/ProjectList';
 import { Dashboard } from './components/Dashboard';
+import { TimeFilterOptions } from './components/TimeFilter';
 import { ProjectState, PROJECT_STATES } from './types';
 import './App.css';
 
 function App() {
+  const [timeFilters, setTimeFilters] = useState<TimeFilterOptions>({});
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'add' | 'all' | ProjectState>('dashboard');
+  
   const {
     projects,
     loading,
@@ -16,9 +20,7 @@ function App() {
     deleteProject,
     getProjectsByState,
     getTotalAmount,
-  } = useProjectsAPI();
-  
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'add' | 'all' | ProjectState>('dashboard');
+  } = useProjectsAPI(timeFilters);
 
   return (
     <div className="app">
@@ -72,6 +74,8 @@ function App() {
           <Dashboard 
             getTotalAmount={getTotalAmount}
             getProjectsByState={getProjectsByState}
+            timeFilters={timeFilters}
+            onTimeFiltersChange={setTimeFilters}
           />
         )}
 

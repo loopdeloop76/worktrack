@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
 import { Project, ProjectState } from '../types';
+import { TimeFilterOptions } from '../components/TimeFilter';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export function useProjectsAPI() {
+export function useProjectsAPI(timeFilters?: TimeFilterOptions) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (filters?: TimeFilterOptions) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/projects`);
+      const params = new URLSearchParams();
+      const activeFilters = filters || timeFilters;
+      
+      if (activeFilters?.year) params.append('year', activeFilters.year.toString());
+      if (activeFilters?.quarter) params.append('quarter', activeFilters.quarter.toString());
+      if (activeFilters?.month) params.append('month', activeFilters.month);
+      
+      const url = `${API_BASE}/projects${params.toString() ? `?${params}` : ''}`;
+      const response = await fetch(url);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch projects');
       }
@@ -27,7 +37,7 @@ export function useProjectsAPI() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [timeFilters]);
 
   const addProject = async (project: Omit<Project, 'id'>) => {
     setLoading(true);
@@ -69,7 +79,9 @@ export function useProjectsAPI() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update project');
+        const errorData = await response.text();
+        console.error('Update failed:', response.status, errorData);
+        throw new Error(`Failed to update project: ${response.status}`);
       }
       
       const updatedProject = await response.json();
@@ -78,8 +90,13 @@ export function useProjectsAPI() {
           project.id === id ? updatedProject : project
         )
       );
+      
+      // Refetch to ensure consistency with filters
+      await fetchProjects();
+      
       return updatedProject;
     } catch (err) {
+      console.error('Update project error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
       throw err;
     } finally {
@@ -96,11 +113,17 @@ export function useProjectsAPI() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to delete project');
+        const errorData = await response.text();
+        console.error('Delete failed:', response.status, errorData);
+        throw new Error(`Failed to delete project: ${response.status}`);
       }
       
       setProjects(prev => prev.filter(project => project.id !== id));
+      
+      // Refetch to ensure consistency
+      await fetchProjects();
     } catch (err) {
+      console.error('Delete project error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
       throw err;
     } finally {

@@ -28,9 +28,41 @@ function initializeDatabase() {
   db.exec(createUpdateTrigger);
 }
 
-function getAllProjects() {
-  const stmt = db.prepare('SELECT * FROM projects ORDER BY created_at DESC');
-  return stmt.all();
+function getAllProjects(filters = {}) {
+  let query = 'SELECT * FROM projects';
+  const params = [];
+  const conditions = [];
+
+  if (filters.year) {
+    conditions.push("strftime('%Y', created_at) = ?");
+    params.push(filters.year.toString());
+  }
+
+  if (filters.quarter) {
+    const quarterMonths = {
+      1: ['01', '02', '03'],
+      2: ['04', '05', '06'],
+      3: ['07', '08', '09'],
+      4: ['10', '11', '12']
+    };
+    const months = quarterMonths[filters.quarter];
+    conditions.push(`strftime('%m', created_at) IN (${months.map(() => '?').join(', ')})`);
+    params.push(...months);
+  }
+
+  if (filters.month) {
+    conditions.push("strftime('%Y-%m', created_at) = ?");
+    params.push(filters.month);
+  }
+
+  if (conditions.length > 0) {
+    query += ' WHERE ' + conditions.join(' AND ');
+  }
+
+  query += ' ORDER BY created_at DESC';
+
+  const stmt = db.prepare(query);
+  return stmt.all(...params);
 }
 
 function getProjectById(id) {
@@ -88,11 +120,53 @@ function deleteProject(id) {
   return { deleted: result.changes > 0 };
 }
 
+function getProjectsGroupedByMonth(filters = {}) {
+  let query = `
+    SELECT 
+      strftime('%Y-%m', created_at) as month,
+      COUNT(*) as count,
+      SUM(amount) as total_amount,
+      AVG(amount) as avg_amount
+    FROM projects
+    WHERE state = 'paid'
+  `;
+  
+  const params = [];
+  const conditions = ["state = 'paid'"];
+
+  if (filters.year) {
+    conditions.push("strftime('%Y', created_at) = ?");
+    params.push(filters.year.toString());
+  }
+
+  if (filters.quarter) {
+    const quarterMonths = {
+      1: ['01', '02', '03'],
+      2: ['04', '05', '06'],
+      3: ['07', '08', '09'],
+      4: ['10', '11', '12']
+    };
+    const months = quarterMonths[filters.quarter];
+    conditions.push(`strftime('%m', created_at) IN (${months.map(() => '?').join(', ')})`);
+    params.push(...months);
+  }
+
+  if (conditions.length > 1) {
+    query = query.replace('WHERE state = \'paid\'', `WHERE ${conditions.join(' AND ')}`);
+  }
+
+  query += ' GROUP BY strftime(\'%Y-%m\', created_at) ORDER BY month';
+
+  const stmt = db.prepare(query);
+  return stmt.all(...params);
+}
+
 module.exports = {
   initializeDatabase,
   getAllProjects,
   getProjectById,
   createProject,
   updateProject,
-  deleteProject
+  deleteProject,
+  getProjectsGroupedByMonth
 };

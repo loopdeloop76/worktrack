@@ -6,7 +6,8 @@ const {
   getProjectById,
   createProject,
   updateProject,
-  deleteProject
+  deleteProject,
+  getProjectsGroupedByMonth
 } = require('./database');
 
 const app = express();
@@ -19,11 +20,34 @@ initializeDatabase();
 
 app.get('/api/projects', (req, res) => {
   try {
-    const projects = getAllProjects();
+    const { year, quarter, month } = req.query;
+    const filters = {};
+    
+    if (year) filters.year = parseInt(year);
+    if (quarter) filters.quarter = parseInt(quarter);
+    if (month) filters.month = month;
+    
+    const projects = getAllProjects(filters);
     res.json(projects);
   } catch (error) {
     console.error('Error fetching projects:', error);
     res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+app.get('/api/projects/stats/monthly', (req, res) => {
+  try {
+    const { year, quarter } = req.query;
+    const filters = {};
+    
+    if (year) filters.year = parseInt(year);
+    if (quarter) filters.quarter = parseInt(quarter);
+    
+    const monthlyStats = getProjectsGroupedByMonth(filters);
+    res.json(monthlyStats);
+  } catch (error) {
+    console.error('Error fetching monthly stats:', error);
+    res.status(500).json({ error: 'Failed to fetch monthly stats' });
   }
 });
 

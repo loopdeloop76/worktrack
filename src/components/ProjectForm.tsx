@@ -49,7 +49,7 @@ export function ProjectForm({ onSubmit, initialData, onCancel }: ProjectFormProp
       </div>
       
       <div className="form-group">
-        <label htmlFor="amount">Amount ($):</label>
+        <label htmlFor="amount">Amount (€):</label>
         <input
           type="number"
           id="amount"

@@ -29,8 +29,16 @@ WorkTrack is a React/TypeScript application for tracking work projects. Each pro
 
 - `src/types.ts` - Project interface and state definitions
 - `src/hooks/useProjectsAPI.ts` - API integration and state management
-- `src/components/` - UI components (ProjectForm, ProjectList, Dashboard)
+- `src/components/` - UI components (ProjectForm, ProjectList, Dashboard, TimeFilter, ProjectChart)
 - `src/App.tsx` - Main application with tab navigation
-- `server/index.js` - Express API server
-- `server/database.js` - SQLite database operations
+- `server/index.js` - Express API server with time-filtered endpoints
+- `server/database.js` - SQLite database operations with date filtering
 - `server/worktrack.db` - SQLite database file (auto-created)
+
+## Features
+
+- **Time-based filtering**: Filter projects by year, quarter, or specific month
+- **Interactive charts**: Bar and line charts showing revenue by month with Recharts
+- **Responsive dashboard**: Stats cards showing totals by project state
+- **Full CRUD operations**: Create, read, update, delete projects
+- **Data persistence**: SQLite database with automatic timestamps
